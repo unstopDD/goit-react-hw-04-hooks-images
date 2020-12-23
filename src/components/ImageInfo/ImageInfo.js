@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 import ImageGallery from '../ImageGallery';
@@ -6,7 +6,7 @@ import Button from '../Button';
 import Spinner from '../Loader';
 import Modal from '../Modal';
 
-import imageAPI from '../../utils/articlesApi';
+import fetchArticlesWithQuery from '../../utils/articlesApi';
 import scroll from '../../utils/scroll';
 
 const Status = {
@@ -25,42 +25,45 @@ export default function ImageInfo({ searchQuery }) {
   const [arePicturesOver, setArePicturesOver] = useState(false);
   const [status, setStatus] = useState(Status.IDLE);
 
-  const Query = useRef(null);
-  useEffect(() => {
-    Query.current = searchQuery;
-    const currentQuery = Query.current;
-
-    if (currentQuery === searchQuery) {
-      setArticles([]);
-      setPage(1);
-      setError(null);
-      setStatus(Status.IDLE);
-    }
-  }, [searchQuery]);
-
   useEffect(() => {
     if (!searchQuery) {
       return;
     }
+    setArticles([]);
+    setPage(1);
+    setError(null);
 
+    fetchArticles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (page === 1) {
+      return;
+    }
+
+    fetchArticles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  const fetchArticles = () => {
     setStatus(Status.PENDING);
 
-    imageAPI
-      .fetchArticlesWithQuery(searchQuery, page)
+    fetchArticlesWithQuery(searchQuery, page)
       .then(({ hits, totalHits }) => {
         setArticles(prevHits => [...prevHits, ...hits]);
-        setArePicturesOver(totalHits - (page - 1) * 12 <= 0);
+        setArePicturesOver(totalHits - page * 12 <= 0);
         setStatus(Status.RESOLVED);
       })
       .catch(error => {
         setError(error);
         setStatus(Status.REJECTED);
-      });
-  }, [page, searchQuery]);
+      })
+      .finally(scroll);
+  };
 
   const onClickLoadMore = () => {
     setPage(page => page + 1);
-    setTimeout(scroll, 300);
   };
 
   const closeModal = () => {

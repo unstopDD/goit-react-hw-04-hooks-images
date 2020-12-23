@@ -12,8 +12,4 @@ function fetchArticlesWithQuery(searchQuery, page = 1) {
   });
 }
 
-const api = {
-  fetchArticlesWithQuery,
-};
-
-export default api;
+export default fetchArticlesWithQuery;
